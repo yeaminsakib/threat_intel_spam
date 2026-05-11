@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Threat Intel — Full Project Guide</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;600;700&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#0B1120;
+  --card:#111827;
+  --border:#1E2D45;
+  --blue:#3B82F6;
+  --cyan:#06B6D4;
+  --green:#10B981;
+  --amber:#F59E0B;
+  --red:#EF4444;
+  --purple:#8B5CF6;
+  --pink:#EC4899;
+  --text:#E2E8F0;
+  --muted:#64748B;
+  --code-bg:#0D1117;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-size:14px;
+  line-height:1.6;
+  min-height:100vh;
+}
+
+/* ── Layout ── */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{
+  width:240px;flex-shrink:0;
+  background:var(--card);
+  border-right:1px solid var(--border);
+  overflow-y:auto;padding:20px 0;
+  display:flex;flex-direction:column;
+}
+.main{flex:1;overflow-y:auto;padding:32px 40px;}
+
+/* ── Sidebar ── */
+.logo{
+  padding:0 20px 20px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:12px;
+}
+.logo-title{font-size:12px;font-weight:700;color:var(--cyan);letter-spacing:2px;text-transform:uppercase}
+.logo-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+.nav-section{
+  padding:8px 20px 4px;
+  font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);font-weight:600;
+}
+.nav-item{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 20px;cursor:pointer;
+  font-size:13px;color:var(--muted);
+  border-left:3px solid transparent;
+  transition:all .15s;
+}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.nav-item.active{
+  color:var(--blue);
+  border-left-color:var(--blue);
+  background:rgba(59,130,246,.07);
+}
+.nav-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+}
+
+/* ── Page sections ── */
+.section{display:none}
+.section.active{display:block}
+
+/* ── Page title ── */
+.page-title{
+  font-size:26px;font-weight:700;margin-bottom:6px;
+}
+.page-sub{color:var(--muted);margin-bottom:32px;font-size:14px}
+
+/* ── Folder tree ── */
+.tree{
+  background:var(--code-bg);
+  border:1px solid var(--border);
+  border-radius:12px;padding:24px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12.5px;line-height:2;
+}
+.tree-row{display:flex;align-items:center;gap:8px}
+.tree-row .indent{color:#2D3F55}
+.tree-label{cursor:pointer;padding:1px 6px;border-radius:4px;transition:background .15s}
+.tree-label:hover{background:rgba(255,255,255,.06)}
+.tree-label.folder{color:var(--amber);font-weight:600}
+.tree-label.file-py{color:var(--blue)}
+.tree-label.file-cfg{color:var(--green)}
+.tree-label.file-data{color:var(--cyan)}
+.tree-label.file-txt{color:var(--muted)}
+.tree-desc{color:var(--muted);font-size:11px;font-family:'DM Sans',sans-serif;margin-left:auto;font-style:italic}
+
+/* ── Code block ── */
+.code-block{
+  background:var(--code-bg);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;margin:20px 0;
+}
+.code-header{
+  background:#161B22;
+  padding:10px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);
+}
+.code-filename{
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;color:var(--cyan);
+}
+.code-badge{
+  font-size:10px;padding:2px 8px;border-radius:20px;
+  background:rgba(59,130,246,.15);color:var(--blue);
+  font-weight:600;
+}
+.code-body{
+  padding:20px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;line-height:1.8;overflow-x:auto;
+  white-space:pre;
+}
+.kw{color:#FF79C6}
+.fn{color:#50FA7B}
+.st{color:#F1FA8C}
+.cm{color:#6272A4;font-style:italic}
+.num{color:#BD93F9}
+.var{color:#8BE9FD}
+
+/* ── Pipeline diagram ── */
+.pipeline{
+  display:flex;align-items:center;gap:0;
+  margin:28px 0;flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px;
+}
+.pipe-step{
+  flex-shrink:0;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px 18px;min-width:150px;
+  cursor:pointer;transition:all .2s;
+  position:relative;
+}
+.pipe-step:hover{transform:translateY(-3px);border-color:var(--blue)}
+.pipe-step.active-step{border-color:var(--blue);background:rgba(59,130,246,.08)}
+.pipe-num{
+  font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:4px;
+}
+.pipe-name{font-size:13px;font-weight:700;margin-bottom:3px}
+.pipe-file{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;color:var(--cyan);
+}
+.pipe-arrow{
+  flex-shrink:0;padding:0 6px;color:var(--muted);font-size:18px;
+}
+
+/* ── Info cards ── */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin:20px 0}
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:20px;
+}
+.card-title{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.card-body{font-size:12.5px;color:var(--muted);line-height:1.7}
+
+/* ── Run steps ── */
+.run-step{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:20px;margin:14px 0;
+  display:flex;gap:16px;align-items:flex-start;
+}
+.run-num{
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;flex-shrink:0;
+  background:var(--blue);color:white;
+}
+.run-content{}
+.run-title{font-weight:700;margin-bottom:6px}
+.run-cmd{
+  background:var(--code-bg);
+  border:1px solid var(--border);
+  border-radius:6px;padding:10px 14px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;color:var(--green);
+  margin:8px 0;
+}
+.run-output{
+  background:#0A1F0A;
+  border:1px solid #1A3D1A;
+  border-radius:6px;padding:10px 14px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11.5px;color:#86EFAC;
+  margin:8px 0;white-space:pre;
+}
+.run-note{font-size:12px;color:var(--muted)}
+
+/* ── Detail panel ── */
+.detail{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:24px;margin:20px 0;
+}
+.detail-title{font-size:16px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.detail-sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dl{font-size:12.5px}
+.dl dt{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+.dl dd{color:var(--text);font-weight:600;font-family:'JetBrains Mono',monospace;font-size:12px}
+
+/* ── Highlight ── */
+.hl{color:var(--amber);font-weight:700}
+.tag{
+  display:inline-block;padding:2px 8px;border-radius:20px;
+  font-size:11px;font-weight:600;margin:2px;
+}
+.tag-blue{background:rgba(59,130,246,.15);color:var(--blue)}
+.tag-green{background:rgba(16,185,129,.15);color:var(--green)}
+.tag-amber{background:rgba(245,158,11,.15);color:var(--amber)}
+.tag-red{background:rgba(239,68,68,.15);color:var(--red)}
+.tag-purple{background:rgba(139,92,246,.15);color:var(--purple)}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#2D3F55;border-radius:3px}
+
+/* ── Section heading ── */
+h2{font-size:16px;font-weight:700;margin:28px 0 12px;color:var(--text)}
+h3{font-size:13px;font-weight:700;margin:20px 0 8px;color:var(--cyan)}
+
+.sep{height:1px;background:var(--border);margin:28px 0}
+
+.badge-row{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+
+.arrow-flow{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:16px 0;
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+}
+.af-box{
+  background:var(--code-bg);border:1px solid var(--border);
+  padding:6px 12px;border-radius:6px;
+}
+.af-arrow{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-title">Threat Intel</div>
+    <div class="logo-sub">Project Code Guide</div>
+  </div>
+
+  <div class="nav-section">Sections</div>
+
+  <div class="nav-item active" onclick="show('structure')">
+    <span class="nav-dot" style="background:#F59E0B"></span> Folder Structure
+  </div>
+  <div class="nav-item" onclick="show('files')">
+    <span class="nav-dot" style="background:#3B82F6"></span> What Each File Does
+  </div>
+  <div class="nav-item" onclick="show('pipeline')">
+    <span class="nav-dot" style="background:#06B6D4"></span> Pipeline Diagram
+  </div>
+  <div class="nav-item" onclick="show('code')">
+    <span class="nav-dot" style="background:#10B981"></span> Code Explained
+  </div>
+  <div class="nav-item" onclick="show('run')">
+    <span class="nav-dot" style="background:#8B5CF6"></span> How to Run
+  </div>
+  <div class="nav-item" onclick="show('output')">
+    <span class="nav-dot" style="background:#EC4899"></span> Expected Output
+  </div>
+</nav>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<main class="main">
+
+<!-- ─── STRUCTURE ─── -->
+<div id="structure" class="section active">
+  <div class="page-title">📁 Full Folder & File Structure</div>
+  <div class="page-sub">Every folder and file in your project — what it is and why it exists</div>
+
+  <div class="tree">
+
+<div class="tree-row"><span class="tree-label folder">📁 threat_intel_spam/</span><span class="tree-desc">← your root project folder</span></div>
+
+<div class="tree-row"><span class="indent">│</span></div>
+<div class="tree-row"><span class="indent">├── </span><span class="tree-label file-cfg">config.py</span><span class="tree-desc">all paths + settings, every file imports this</span></div>
+<div class="tree-row"><span class="indent">├── </span><span class="tree-label file-cfg">pipeline.py</span><span class="tree-desc">master runner — runs all steps in order</span></div>
+<div class="tree-row"><span class="indent">├── </span><span class="tree-label file-cfg">requirements.txt</span><span class="tree-desc">all Python packages to install</span></div>
+<div class="tree-row"><span class="indent">├── </span><span class="tree-label file-txt">.env</span><span class="tree-desc">secret credentials — NEVER commit to GitHub</span></div>
+
+<div class="tree-row"><span class="indent">│</span></div>
+<div class="tree-row"><span class="indent">├── </span><span class="tree-label folder">📁 src/</span><span class="tree-desc">all Python source code files</span></div>
+<div class="tree-row"><span class="indent">│   ├── </span><span class="tree-label file-py">email_fetcher.py</span><span class="tree-desc">STEP 1: loads .eml files from corpus folders</span></div>
+<div class="tree-row"><span class="indent">│   ├── </span><span class="tree-label file-py">header_parser.py</span><span class="tree-desc">STEP 2: reads .eml files, extracts header fields</span></div>
+<div class="tree-row"><span class="indent">│   ├── </span><span class="tree-label file-py">ioc_extractor.py</span><span class="tree-desc">STEP 3: extracts IPs/domains → own_ioc.csv</span></div>
+<div class="tree-row"><span class="indent">│   ├── </span><span class="tree-label file-py">ioc_merger.py</span><span class="tree-desc">STEP 4: merges with PhishTank + Abuse.ch</span></div>
+<div class="tree-row"><span class="indent">│   ├── </span><span class="tree-label file-py">ai_scorer.py</span><span class="tree-desc">STEP 6: scores any email using ML model + IoC</span></div>
+<div class="tree-row"><span class="indent">│   ├── </span><span class="tree-label file-py">blocker.py</span><span class="tree-desc">STEP 7: blocks IPs/domains if score is high</span></div>
+<div class="tree-row"><span class="indent">│   └── </span><span class="tree-label file-py">dashboard.py</span><span class="tree-desc">STEP 8: Flask web server, serves the UI</span></div>
+
+<div class="tree-row"><span class="indent">│</span></div>
+<div class="tree-row"><span class="indent">├── </span><span class="tree-label folder">📁 models/</span><span class="tree-desc">ML training script and saved model</span></div>
+<div class="tree-row"><span class="indent">│   ├── </span><span class="tree-label file-py">train_model.py</span><span class="tree-desc">STEP 5: trains Random Forest + Logistic Regression</span></div>
+<div class="tree-row"><span class="indent">│   └── </span><span class="tree-label file-data">spam_classifier.pkl</span><span class="tree-desc">saved trained model (auto-generated, don't edit)</span></div>
+
+<div class="tree-row"><span class="indent">│</span></div>
+<div class="tree-row"><span class="indent">├── </span><span class="tree-label folder">📁 data/</span><span class="tree-desc">all email data and IoC databases</span></div>
+<div class="tree-row"><span class="indent">│   ├── </span><span class="tree-label folder">📁 raw/spam/</span><span class="tree-desc">original SpamAssassin spam corpus files</span></div>
+<div class="tree-row"><span class="indent">│   │   ├── </span><span class="tree-label folder">spam_1/</span><span class="tree-desc">20021010_spam extracted here (~500 emails)</span></div>
+<div class="tree-row"><span class="indent">│   │   ├── </span><span class="tree-label folder">spam_2/</span><span class="tree-desc">20030228_spam extracted here (~1,397 emails)</span></div>
+<div class="tree-row"><span class="indent">│   │   ├── </span><span class="tree-label folder">spam_3/</span><span class="tree-desc">20050311_spam_2 extracted here (~1,396 emails)</span></div>
+<div class="tree-row"><span class="indent">│   │   └── </span><span class="tree-label folder">collected/</span><span class="tree-desc">← ALL spam .eml files saved here by fetcher</span></div>
+<div class="tree-row"><span class="indent">│   ├── </span><span class="tree-label folder">📁 raw/ham/</span><span class="tree-desc">legitimate email corpus files</span></div>
+<div class="tree-row"><span class="indent">│   │   ├── </span><span class="tree-label folder">easy_ham/</span><span class="tree-desc">20021010_easy_ham (~2,500 emails)</span></div>
+<div class="tree-row"><span class="indent">│   │   ├── </span><span class="tree-label folder">easy_ham_2/</span><span class="tree-desc">20021010_easy_ham_2 (~1,400 emails)</span></div>
+<div class="tree-row"><span class="indent">│   │   ├── </span><span class="tree-label folder">hard_ham/</span><span class="tree-desc">20021010_hard_ham (~250 emails, tricky legit)</span></div>
+<div class="tree-row"><span class="indent">│   │   ├── </span><span class="tree-label folder">easy_ham_2003/</span><span class="tree-desc">20030228_easy_ham (~2,500 emails)</span></div>
+<div class="tree-row"><span class="indent">│   │   ├── </span><span class="tree-label folder">hard_ham_2003/</span><span class="tree-desc">20030228_hard_ham (~250 emails)</span></div>
+<div class="tree-row"><span class="indent">│   │   └── </span><span class="tree-label folder">collected/</span><span class="tree-desc">← ALL ham .eml files saved here by fetcher</span></div>
+<div class="tree-row"><span class="indent">│   ├── </span><span class="tree-label folder">📁 processed/</span><span class="tree-desc">parsed email data (JSON output of header_parser)</span></div>
+<div class="tree-row"><span class="indent">│   │   └── </span><span class="tree-label file-data">all_emails.json</span><span class="tree-desc">structured header data for all emails</span></div>
+<div class="tree-row"><span class="indent">│   ├── </span><span class="tree-label file-data">fetch_summary.json</span><span class="tree-desc">count of how many files were loaded</span></div>
+<div class="tree-row"><span class="indent">│   └── </span><span class="tree-label folder">📁 ioc/</span><span class="tree-desc">all IoC database files</span></div>
+<div class="tree-row"><span class="indent">│       ├── </span><span class="tree-label file-data">own_ioc.csv</span><span class="tree-desc">YOUR extracted IoC database</span></div>
+<div class="tree-row"><span class="indent">│       ├── </span><span class="tree-label file-data">master_ioc.csv</span><span class="tree-desc">merged: own + PhishTank + ThreatFox</span></div>
+<div class="tree-row"><span class="indent">│       └── </span><span class="tree-label folder">external/</span><span class="tree-desc">downloaded external feed CSVs</span></div>
+
+<div class="tree-row"><span class="indent">│</span></div>
+<div class="tree-row"><span class="indent">├── </span><span class="tree-label folder">📁 notebooks/</span><span class="tree-desc">Jupyter notebooks for analysis and exploration</span></div>
+<div class="tree-row"><span class="indent">├── </span><span class="tree-label folder">📁 ui/</span><span class="tree-desc">Flask dashboard HTML/CSS/JS templates</span></div>
+<div class="tree-row"><span class="indent">│   ├── </span><span class="tree-label folder">templates/</span><span class="tree-desc">Jinja2 HTML files for Flask</span></div>
+<div class="tree-row"><span class="indent">│   └── </span><span class="tree-label folder">static/</span><span class="tree-desc">CSS, JavaScript, chart files</span></div>
+<div class="tree-row"><span class="indent">└── </span><span class="tree-label folder">📁 reports/</span><span class="tree-desc">block logs and analyst reports</span></div>
+<div class="tree-row"><span class="indent">    ├── </span><span class="tree-label file-data">blocklist.txt</span><span class="tree-desc">IPs and domains that have been blocked</span></div>
+<div class="tree-row"><span class="indent">    └── </span><span class="tree-label file-data">block_log.csv</span><span class="tree-desc">full audit log of every block/alert event</span></div>
+
+  </div>
+</div>
+
+<!-- ─── FILES ─── -->
+<div id="files" class="section">
+  <div class="page-title">📄 What Each File Does</div>
+  <div class="page-sub">Simple explanation of every file's purpose and what goes in and out</div>
+
+  <div class="detail">
+    <div class="detail-title">⚙️ <span style="color:var(--green)">config.py</span></div>
+    <div class="detail-sub">The settings file. Every other file imports paths and settings from here.</div>
+    <p style="color:var(--muted);font-size:13px">Think of it like a dictionary of all file paths and important numbers. If you ever want to change where files are saved, you only edit this one file. Nothing is hardcoded anywhere else.</p>
+    <div class="badge-row"><span class="tag tag-green">Input: nothing</span><span class="tag tag-amber">Output: variables (imported by other files)</span></div>
+  </div>
+
+  <div class="detail">
+    <div class="detail-title">🔌 <span style="color:var(--blue)">src/email_fetcher.py</span> — Step 1</div>
+    <div class="detail-sub">Reads SpamAssassin corpus files and saves them as .eml files.</div>
+    <div class="detail-grid">
+      <dl class="dl"><dt>Takes in</dt><dd>Files in data/raw/spam/ and data/raw/ham/</dd></dl>
+      <dl class="dl"><dt>Produces</dt><dd>data/raw/spam/collected/*.eml<br>data/raw/ham/collected/*.eml<br>data/fetch_summary.json</dd></dl>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin-top:12px">Key functions: <code style="color:var(--cyan)">load_corpus_from_folder()</code> — loads one folder, <code style="color:var(--cyan)">load_all_public_datasets()</code> — runs all folders</p>
+  </div>
+
+  <div class="detail">
+    <div class="detail-title">🔍 <span style="color:var(--blue)">src/header_parser.py</span> — Step 2</div>
+    <div class="detail-sub">Opens every .eml file and pulls out all important header fields into structured data.</div>
+    <div class="detail-grid">
+      <dl class="dl"><dt>Takes in</dt><dd>data/raw/spam/collected/*.eml<br>data/raw/ham/collected/*.eml</dd></dl>
+      <dl class="dl"><dt>Produces</dt><dd>data/processed/all_emails.json<br>(one JSON object per email)</dd></dl>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin-top:12px">Extracts: From, domain, mailserver IPs, Return-Path, DKIM, SPF, hop count, subject, body URLs, and more. This JSON file is the input for everything else.</p>
+  </div>
+
+  <div class="detail">
+    <div class="detail-title">🗄️ <span style="color:var(--blue)">src/ioc_extractor.py</span> — Step 3</div>
+    <div class="detail-sub">Builds YOUR OWN IoC database from the parsed email data.</div>
+    <div class="detail-grid">
+      <dl class="dl"><dt>Takes in</dt><dd>data/processed/all_emails.json</dd></dl>
+      <dl class="dl"><dt>Produces</dt><dd>data/ioc/own_ioc.csv</dd></dl>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin-top:12px">For each unique IP, domain, URL, and email address found in spam emails — it calculates a threat score and writes one row to the CSV. Ham-only indicators are skipped.</p>
+  </div>
+
+  <div class="detail">
+    <div class="detail-title">🔗 <span style="color:var(--blue)">src/ioc_merger.py</span> — Step 4</div>
+    <div class="detail-sub">Downloads PhishTank and ThreatFox (Abuse.ch) feeds. Merges with your own IoC CSV.</div>
+    <div class="detail-grid">
+      <dl class="dl"><dt>Takes in</dt><dd>data/ioc/own_ioc.csv + internet downloads</dd></dl>
+      <dl class="dl"><dt>Produces</dt><dd>data/ioc/master_ioc.csv<br>data/ioc/external/phishtank.csv<br>data/ioc/external/threatfox.csv</dd></dl>
+    </div>
+  </div>
+
+  <div class="detail">
+    <div class="detail-title">🧠 <span style="color:var(--purple)">models/train_model.py</span> — Step 5</div>
+    <div class="detail-sub">Trains the machine learning model. Reads emails, builds features, trains, evaluates, saves.</div>
+    <div class="detail-grid">
+      <dl class="dl"><dt>Takes in</dt><dd>data/processed/all_emails.json</dd></dl>
+      <dl class="dl"><dt>Produces</dt><dd>models/spam_classifier.pkl<br>(prints accuracy, precision, recall, F1)</dd></dl>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin-top:12px">Uses Random Forest + Logistic Regression ensemble. Features come from header fields: hop count, IP count, DKIM/SPF flags, suspicious TLD, etc.</p>
+  </div>
+
+  <div class="detail">
+    <div class="detail-title">🤖 <span style="color:var(--blue)">src/ai_scorer.py</span> — Step 6</div>
+    <div class="detail-sub">Takes any .eml file and gives it a threat score 0–100 with reasons.</div>
+    <div class="detail-grid">
+      <dl class="dl"><dt>Takes in</dt><dd>Any .eml file + models/spam_classifier.pkl + master_ioc.csv</dd></dl>
+      <dl class="dl"><dt>Produces</dt><dd>JSON: score, decision, reasons list</dd></dl>
+    </div>
+  </div>
+
+  <div class="detail">
+    <div class="detail-title">🔒 <span style="color:var(--red)">src/blocker.py</span> — Step 7</div>
+    <div class="detail-sub">Receives a score result. If score &gt; 75 → blocks IPs/domains. Logs everything.</div>
+    <div class="detail-grid">
+      <dl class="dl"><dt>Takes in</dt><dd>Score result dict from ai_scorer.py</dd></dl>
+      <dl class="dl"><dt>Produces</dt><dd>reports/blocklist.txt<br>reports/block_log.csv</dd></dl>
+    </div>
+  </div>
+
+  <div class="detail">
+    <div class="detail-title">🚀 <span style="color:var(--green)">pipeline.py</span> — Master Runner</div>
+    <div class="detail-sub">Runs ALL 5 steps above in the correct order with one command.</div>
+    <div class="badge-row">
+      <span class="tag tag-blue">Step 1: fetch</span>
+      <span class="tag tag-blue">Step 2: parse</span>
+      <span class="tag tag-amber">Step 3: extract IoC</span>
+      <span class="tag tag-amber">Step 4: merge feeds</span>
+      <span class="tag tag-purple">Step 5: train model</span>
+    </div>
+    <div class="run-cmd">python pipeline.py</div>
+  </div>
+</div>
+
+<!-- ─── PIPELINE ─── -->
+<div id="pipeline" class="section">
+  <div class="page-title">🔄 Pipeline Diagram</div>
+  <div class="page-sub">Click any step to see what it reads and what it produces</div>
+
+  <div class="pipeline">
+    <div class="pipe-step active-step" onclick="showStep(1)">
+      <div class="pipe-num">Step 1</div>
+      <div class="pipe-name" style="color:var(--blue)">Fetch Emails</div>
+      <div class="pipe-file">email_fetcher.py</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" onclick="showStep(2)">
+      <div class="pipe-num">Step 2</div>
+      <div class="pipe-name" style="color:var(--cyan)">Parse Headers</div>
+      <div class="pipe-file">header_parser.py</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" onclick="showStep(3)">
+      <div class="pipe-num">Step 3</div>
+      <div class="pipe-name" style="color:var(--amber)">Extract IoC</div>
+      <div class="pipe-file">ioc_extractor.py</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" onclick="showStep(4)">
+      <div class="pipe-num">Step 4</div>
+      <div class="pipe-name" style="color:var(--amber)">Merge Feeds</div>
+      <div class="pipe-file">ioc_merger.py</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" onclick="showStep(5)">
+      <div class="pipe-num">Step 5</div>
+      <div class="pipe-name" style="color:var(--purple)">Train Model</div>
+      <div class="pipe-file">train_model.py</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" onclick="showStep(6)">
+      <div class="pipe-num">Step 6</div>
+      <div class="pipe-name" style="color:var(--green)">Score Email</div>
+      <div class="pipe-file">ai_scorer.py</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" onclick="showStep(7)">
+      <div class="pipe-num">Step 7</div>
+      <div class="pipe-name" style="color:var(--red)">Block/Alert</div>
+      <div class="pipe-file">blocker.py</div>
+    </div>
+  </div>
+
+  <div id="step-detail" class="detail">
+    <div class="detail-title">📥 Step 1 — <span style="color:var(--blue)">email_fetcher.py</span></div>
+    <div class="detail-sub">Reads corpus files and saves them as .eml files</div>
+    <div class="arrow-flow">
+      <div class="af-box">data/raw/spam/spam_1/<br>data/raw/ham/easy_ham/</div>
+      <span class="af-arrow">──→</span>
+      <div class="af-box" style="border-color:var(--blue);color:var(--blue)">email_fetcher.py</div>
+      <span class="af-arrow">──→</span>
+      <div class="af-box">data/raw/spam/collected/*.eml<br>data/raw/ham/collected/*.eml</div>
+    </div>
+    <p style="color:var(--muted);font-size:13px">Reads every file in spam_1, spam_2, spam_3, easy_ham, hard_ham etc. — skips hidden dot files — copies each as a named .eml file. Saves a JSON summary of counts.</p>
+  </div>
+</div>
+
+<!-- ─── CODE ─── -->
+<div id="code" class="section">
+  <div class="page-title">💡 Key Code Explained</div>
+  <div class="page-sub">The most important functions — what they do line by line</div>
+
+  <h2>config.py — the settings foundation</h2>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-filename">config.py</span>
+      <span class="code-badge">Every file imports this</span>
+    </div>
+    <div class="code-body"><span class="cm"># BASE_DIR = the folder where config.py lives (your project root)</span>
+BASE_DIR = os.path.dirname(os.path.abspath(<span class="var">__file__</span>))
+
+<span class="cm"># All data paths are built relative to BASE_DIR</span>
+<span class="cm"># This means the project works on ANY computer</span>
+RAW_SPAM_DIR = os.path.join(BASE_DIR, <span class="st">"data"</span>, <span class="st">"raw"</span>, <span class="st">"spam"</span>)
+
+<span class="cm"># ML thresholds — you can tune these</span>
+BLOCK_THRESHOLD = <span class="num">75</span>   <span class="cm"># score above 75 → auto block</span>
+ALERT_THRESHOLD = <span class="num">50</span>   <span class="cm"># score above 50 → flag for analyst</span></div>
+  </div>
+
+  <h2>header_parser.py — the most important function</h2>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-filename">src/header_parser.py — extract_ips_from_received()</span>
+      <span class="code-badge">Finds attacker IPs</span>
+    </div>
+    <div class="code-body"><span class="kw">def</span> <span class="fn">extract_ips_from_received</span>(received_headers):
+    <span class="cm"># Received headers look like this:</span>
+    <span class="cm"># "from mail.evil.com ([185.220.101.5]) by ..."</span>
+    <span class="cm"># We want to pull out 185.220.101.5</span>
+
+    all_text = <span class="st">" "</span>.join(received_headers)
+
+    <span class="cm"># Regex pattern for IPv4 addresses</span>
+    ips = re.findall(<span class="st">r'\b(?:\d{1,3}\.){3}\d{1,3}\b'</span>, all_text)
+
+    <span class="cm"># Remove private IPs — they are inside your network</span>
+    <span class="cm"># We only care about PUBLIC internet IPs</span>
+    public_ips = [
+        ip <span class="kw">for</span> ip <span class="kw">in</span> ips
+        <span class="kw">if not</span> (ip.startswith(<span class="st">"127."</span>)   <span class="cm"># localhost</span>
+                <span class="kw">or</span> ip.startswith(<span class="st">"10."</span>)    <span class="cm"># private network</span>
+                <span class="kw">or</span> ip.startswith(<span class="st">"192.168."</span>)) <span class="cm"># home/office network</span>
+    ]
+    <span class="kw">return</span> list(set(public_ips))  <span class="cm"># remove duplicates</span></div>
+  </div>
+
+  <h2>ioc_extractor.py — the scoring formula</h2>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-filename">src/ioc_extractor.py — calculate_threat_score()</span>
+      <span class="code-badge">Scores each IoC 0–100</span>
+    </div>
+    <div class="code-body"><span class="kw">def</span> <span class="fn">calculate_threat_score</span>(spam_count, ham_count, seen_count):
+    <span class="cm"># spam_count = how many spam emails contained this IP/domain</span>
+    <span class="cm"># ham_count  = how many LEGITIMATE emails contained it</span>
+    <span class="cm"># seen_count = total emails that had it</span>
+
+    spam_ratio = spam_count / seen_count  <span class="cm"># 0.0 to 1.0</span>
+
+    <span class="cm"># Base score: if seen in 80% spam → base = 64</span>
+    base = int(spam_ratio * <span class="num">80</span>)
+
+    <span class="cm"># Bonus for high frequency (seen in many spam emails)</span>
+    <span class="kw">if</span> spam_count >= <span class="num">10</span>:
+        base = min(base + <span class="num">15</span>, <span class="num">100</span>)  <span class="cm"># very confident</span>
+
+    <span class="cm"># Penalty if also seen in legitimate emails</span>
+    <span class="cm"># e.g. Google's IP might appear in both spam and ham</span>
+    <span class="kw">if</span> ham_count > <span class="num">0</span>:
+        base = max(base - <span class="num">20</span>, <span class="num">0</span>)
+
+    <span class="kw">return</span> base</div>
+  </div>
+
+  <h2>train_model.py — feature engineering</h2>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-filename">models/train_model.py — engineer_features()</span>
+      <span class="code-badge">Turns email data into numbers for ML</span>
+    </div>
+    <div class="code-body"><span class="cm"># ML cannot read text — everything must become a number</span>
+<span class="cm"># Each email becomes one row of numbers (a "feature vector")</span>
+
+row = {
+    <span class="st">"received_hops"</span>      : <span class="num">3</span>,    <span class="cm"># how many servers it passed through</span>
+    <span class="st">"num_mailserver_ips"</span> : <span class="num">2</span>,    <span class="cm"># how many public IPs were found</span>
+    <span class="st">"has_dkim"</span>           : <span class="num">1</span>,    <span class="cm"># 1=yes, 0=no</span>
+    <span class="st">"spf_score"</span>          : <span class="num">3</span>,    <span class="cm"># 0=pass, 1=none, 2=softfail, 3=fail</span>
+    <span class="st">"spf_failed"</span>         : <span class="num">1</span>,    <span class="cm"># 1 if SPF failed</span>
+    <span class="st">"domains_match"</span>      : <span class="num">0</span>,    <span class="cm"># 0 = mismatch = suspicious</span>
+    <span class="st">"num_body_urls"</span>      : <span class="num">12</span>,   <span class="cm"># many URLs = spam signal</span>
+    <span class="st">"subject_suspicious"</span> : <span class="num">1</span>,    <span class="cm"># contains "free", "win", "prize"</span>
+    <span class="st">"suspicious_tld"</span>     : <span class="num">1</span>,    <span class="cm"># .tk .ml .xyz etc.</span>
+}
+<span class="cm"># label → 1 = spam, 0 = ham (legitimate)</span></div>
+  </div>
+</div>
+
+<!-- ─── RUN ─── -->
+<div id="run" class="section">
+  <div class="page-title">▶️ How to Run — Step by Step</div>
+  <div class="page-sub">Do this in EXACT order. Do not skip steps.</div>
+
+  <div class="run-step">
+    <div class="run-num">0</div>
+    <div class="run-content">
+      <div class="run-title">First — Set up the environment (do this ONCE)</div>
+      <div class="run-cmd">cd threat_intel_spam
+python -m venv venv
+source venv/bin/activate       # Mac / Linux
+venv\Scripts\activate          # Windows
+pip install -r requirements.txt</div>
+      <div class="run-note">This creates a clean Python environment and installs all libraries.</div>
+    </div>
+  </div>
+
+  <div class="run-step">
+    <div class="run-num" style="background:var(--amber)">1</div>
+    <div class="run-content">
+      <div class="run-title">Extract your SpamAssassin files into the correct folders</div>
+      <div class="run-cmd">tar -xjf 20021010_spam.tar.bz2     -C data/raw/spam/spam_1/
+tar -xjf 20030228_spam.tar.bz2     -C data/raw/spam/spam_2/
+tar -xjf 20050311_spam_2.tar.bz2   -C data/raw/spam/spam_3/
+tar -xjf 20021010_easy_ham.tar.bz2 -C data/raw/ham/easy_ham/
+tar -xjf 20021010_hard_ham.tar.bz2 -C data/raw/ham/hard_ham/
+tar -xjf 20030228_easy_ham.tar.bz2 -C data/raw/ham/easy_ham_2003/</div>
+      <div class="run-note">Do this for each .tar.bz2 file you downloaded from SpamAssassin.</div>
+    </div>
+  </div>
+
+  <div class="run-step">
+    <div class="run-num" style="background:var(--blue)">2</div>
+    <div class="run-content">
+      <div class="run-title">Run email_fetcher.py — copy corpus files as .eml</div>
+      <div class="run-cmd">python src/email_fetcher.py</div>
+      <div class="run-output">===================================
+  STEP 1 — Loading Public Spam/Ham Datasets
+===================================
+
+  SPAM folders:
+  [SPAM] spam_1                → saved: 500   failed:0  skipped:1
+  [SPAM] spam_2                → saved: 1397  failed:0  skipped:1
+  [SPAM] spam_3                → saved: 1396  failed:0  skipped:1
+
+  HAM folders:
+  [HAM ] easy_ham              → saved: 2500  failed:0  skipped:1
+  [HAM ] hard_ham              → saved: 250   failed:0  skipped:1
+
+  Total spam : 3,293
+  Total ham  : 6,900
+  Total      : 10,193
+
+  Summary saved → data/fetch_summary.json
+  Next step    → run  python src/header_parser.py</div>
+    </div>
+  </div>
+
+  <div class="run-step">
+    <div class="run-num" style="background:var(--cyan)">3</div>
+    <div class="run-content">
+      <div class="run-title">Run header_parser.py — extract all header fields</div>
+      <div class="run-cmd">python src/header_parser.py</div>
+      <div class="run-output">===================================
+  STEP 2 — Parsing Email Headers
+===================================
+
+  Parsing  3,293 [spam] files from collected ...
+    ... 500 / 3,293 done
+    ... 1000 / 3,293 done
+  Parsing  6,900 [ham] files from collected ...
+
+  Parsed spam : 3,287
+  Parsed ham  : 6,891
+  Total       : 10,178
+
+  Saved → data/processed/all_emails.json
+  Next step → run  python src/ioc_extractor.py</div>
+    </div>
+  </div>
+
+  <div class="run-step">
+    <div class="run-num" style="background:var(--amber)">4</div>
+    <div class="run-content">
+      <div class="run-title">Run ioc_extractor.py — build your IoC database</div>
+      <div class="run-cmd">python src/ioc_extractor.py</div>
+      <div class="run-output">===================================
+  STEP 3 — Extracting Indicators of Compromise
+===================================
+
+  Loaded 10,178 parsed emails
+  IoC entries written : 8,432
+  Ham-only skipped    : 1,204
+
+  Saved → data/ioc/own_ioc.csv
+  Next step → run  python src/ioc_merger.py</div>
+    </div>
+  </div>
+
+  <div class="run-step">
+    <div class="run-num" style="background:var(--amber)">5</div>
+    <div class="run-content">
+      <div class="run-title">Run ioc_merger.py — merge with external feeds</div>
+      <div class="run-cmd">python src/ioc_merger.py</div>
+      <div class="run-output">  Downloading PhishTank feed ...
+  PhishTank: 3,241 IoCs saved
+  Downloading ThreatFox (Abuse.ch) feed ...
+  ThreatFox: 1,876 IoCs saved
+
+  Own IoC    : 8,432
+  PhishTank  : 3,241
+  ThreatFox  : 1,876
+
+  Master IoC total : 11,847 unique entries
+  Saved → data/ioc/master_ioc.csv</div>
+    </div>
+  </div>
+
+  <div class="run-step">
+    <div class="run-num" style="background:var(--purple)">6</div>
+    <div class="run-content">
+      <div class="run-title">Run train_model.py — train the ML model</div>
+      <div class="run-cmd">python models/train_model.py</div>
+      <div class="run-output">  Loaded 10,178 emails
+  Features  : 13
+  Spam      : 3,287
+  Ham       : 6,891
+
+  Training on 8,142 emails ...
+  Training complete.
+
+  ── Evaluation Results ──────────────────
+  Accuracy  : 96.84%
+  AUC-ROC   : 0.9891
+
+  Classification Report:
+                 precision  recall  f1-score
+  Ham (legit)     0.98      0.97     0.97
+  Spam            0.95      0.97     0.96
+
+  Top Feature Importances:
+  x_spam_flag          ████████████████  0.3241
+  received_hops        ████████          0.1823
+  spf_score            ██████            0.1244
+
+  Model saved → models/spam_classifier.pkl</div>
+    </div>
+  </div>
+
+  <div class="run-step">
+    <div class="run-num" style="background:var(--green)">7</div>
+    <div class="run-content">
+      <div class="run-title">Test the scorer on one email file</div>
+      <div class="run-cmd">python src/ai_scorer.py data/raw/spam/collected/spam_spam_1_00001.eml</div>
+      <div class="run-output">=========================================
+  AI Threat Score Report
+=========================================
+  File        : spam_spam_1_00001.eml
+  From        : offers@win-big-now.tk
+  Subject     : You have WON a prize! Claim NOW
+  ML Score    : 89/100
+  IoC Boost   : 72
+  FINAL SCORE : 89/100
+  DECISION    : BLOCK
+
+  Reasons:
+  • SPF authentication FAILED — sender not authorised
+  • No DKIM signature — email authenticity unverified
+  • Suspicious TLD in from domain: win-big-now.tk
+  • Subject line contains common spam keywords
+  • Domain win-big-now.tk in IoC database (score: 72)</div>
+    </div>
+  </div>
+
+  <div class="run-step">
+    <div class="run-num" style="background:var(--green)">✓</div>
+    <div class="run-content">
+      <div class="run-title">OR — Run the whole pipeline at once</div>
+      <div class="run-cmd">python pipeline.py</div>
+      <div class="run-note">This runs all 5 steps automatically in order. Good after initial setup.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── OUTPUT ─── -->
+<div id="output" class="section">
+  <div class="page-title">📊 Expected Output Files</div>
+  <div class="page-sub">After all steps run, these are the files you will have</div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title" style="color:var(--cyan)">📄 data/processed/all_emails.json</div>
+      <div class="card-body">
+        One JSON object per email. Contains all extracted header fields. This is your training dataset.<br><br>
+        <span class="tag tag-blue">~10,000 objects</span><br><br>
+        Each object has fields like:<br>
+        from_address, from_domain, mailserver_ips, spf_result, dkim_present, received_hops, subject, body_urls, label
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--amber)">📋 data/ioc/own_ioc.csv</div>
+      <div class="card-body">
+        YOUR built IoC database. One row per unique indicator.<br><br>
+        <span class="tag tag-amber">~8,000+ rows</span><br><br>
+        Columns: ioc_type, ioc_value, first_seen, last_seen, seen_count, spam_count, ham_count, threat_score, source, confirmed, tags
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--green)">🗂️ data/ioc/master_ioc.csv</div>
+      <div class="card-body">
+        Combined: own IoC + PhishTank + ThreatFox feeds.<br><br>
+        <span class="tag tag-green">~12,000+ rows</span><br><br>
+        Same columns as own_ioc.csv. Used by ai_scorer.py for IoC lookup during email scoring.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--purple)">🧠 models/spam_classifier.pkl</div>
+      <div class="card-body">
+        The trained ML model saved to disk.<br><br>
+        <span class="tag tag-purple">Random Forest + LR ensemble</span><br><br>
+        Target: 95%+ accuracy. Loaded instantly by ai_scorer.py to score any new email in milliseconds.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--red)">🚫 reports/blocklist.txt</div>
+      <div class="card-body">
+        Plain text list of blocked IPs and domains. One per line.<br><br>
+        <span class="tag tag-red">Auto-grows as threats detected</span><br><br>
+        Can be imported into a firewall or mail server blackhole list directly.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--blue)">📝 reports/block_log.csv</div>
+      <div class="card-body">
+        Full audit log of every block and alert event.<br><br>
+        <span class="tag tag-blue">Timestamped records</span><br><br>
+        Columns: timestamp, ioc_type, ioc_value, threat_score, decision, source_email
+      </div>
+    </div>
+  </div>
+
+  <h2>What the own_ioc.csv file looks like inside</h2>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-filename">data/ioc/own_ioc.csv (example rows)</span>
+    </div>
+    <div class="code-body" style="font-size:11px">ioc_type,ioc_value,first_seen,last_seen,seen_count,spam_count,ham_count,threat_score,source,confirmed,tags
+IP,185.220.101.5,2025-05-01,2025-05-01,47,47,0,95,public_corpus,YES,mailserver,spam
+DOMAIN,win-big-prize.tk,2025-05-01,2025-05-01,23,23,0,91,public_corpus,YES,phishing,spam
+DOMAIN,gmail.com,2025-05-01,2025-05-01,340,12,328,5,public_corpus,PARTIAL,mailserver
+EMAIL,offers@fake-bank.xyz,2025-05-01,2025-05-01,8,8,0,80,public_corpus,YES,sender,spam
+URL,http://click-here.tk/win,2025-05-01,2025-05-01,15,15,0,88,public_corpus,YES,body-link,spam</div>
+  </div>
+
+  <h2>Quick reference — which file to run for what</h2>
+  <div class="cards">
+    <div class="card"><div class="card-title">Run everything at once</div><div class="run-cmd" style="margin:0">python pipeline.py</div></div>
+    <div class="card"><div class="card-title">Score one specific email</div><div class="run-cmd" style="margin:0">python src/ai_scorer.py path/to/email.eml</div></div>
+    <div class="card"><div class="card-title">Retrain the model only</div><div class="run-cmd" style="margin:0">python models/train_model.py</div></div>
+    <div class="card"><div class="card-title">Start from step 3 onwards</div><div class="run-cmd" style="margin:0">python pipeline.py --from 3</div></div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+function show(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+const stepDetails = {
+  1: {
+    title: "Step 1 — email_fetcher.py",
+    color: "var(--blue)",
+    desc: "Reads corpus files and saves them as .eml files",
+    from: "data/raw/spam/spam_1/ ... spam_3/<br>data/raw/ham/easy_ham/ ... hard_ham/",
+    to: "data/raw/spam/collected/*.eml<br>data/raw/ham/collected/*.eml<br>data/fetch_summary.json",
+    note: "Skips hidden dot files. Saves a JSON summary with total counts."
+  },
+  2: {
+    title: "Step 2 — header_parser.py",
+    color: "var(--cyan)",
+    desc: "Parses every .eml file and extracts header fields",
+    from: "data/raw/spam/collected/*.eml<br>data/raw/ham/collected/*.eml",
+    to: "data/processed/all_emails.json",
+    note: "Extracts: From, domain, IPs, Return-Path, DKIM, SPF, hops, subject, URLs"
+  },
+  3: {
+    title: "Step 3 — ioc_extractor.py",
+    color: "var(--amber)",
+    desc: "Builds your own IoC CSV from parsed email data",
+    from: "data/processed/all_emails.json",
+    to: "data/ioc/own_ioc.csv",
+    note: "Calculates threat score per indicator. Skips ham-only entries."
+  },
+  4: {
+    title: "Step 4 — ioc_merger.py",
+    color: "var(--amber)",
+    desc: "Downloads external feeds and merges with your own IoC",
+    from: "data/ioc/own_ioc.csv + PhishTank API + ThreatFox API",
+    to: "data/ioc/master_ioc.csv<br>data/ioc/external/phishtank.csv<br>data/ioc/external/threatfox.csv",
+    note: "Deduplicates by (type, value). Keeps highest threat score on duplicates."
+  },
+  5: {
+    title: "Step 5 — train_model.py",
+    color: "var(--purple)",
+    desc: "Trains the ML model. Prints evaluation results. Saves model.",
+    from: "data/processed/all_emails.json",
+    to: "models/spam_classifier.pkl<br>(printed: accuracy, precision, recall, F1)",
+    note: "Uses Random Forest + Logistic Regression ensemble. 80/20 train-test split."
+  },
+  6: {
+    title: "Step 6 — ai_scorer.py",
+    color: "var(--green)",
+    desc: "Scores any .eml file. Returns threat score + reasons.",
+    from: "Any .eml file + spam_classifier.pkl + master_ioc.csv",
+    to: "JSON: {score, decision, reasons, from, domain, ips}",
+    note: "Combines ML probability score with IoC database lookup boost."
+  },
+  7: {
+    title: "Step 7 — blocker.py",
+    color: "var(--red)",
+    desc: "Blocks IPs/domains based on score. Logs every event.",
+    from: "Score result dict from ai_scorer.py",
+    to: "reports/blocklist.txt (IPs and domains)\nreports/block_log.csv (audit log)",
+    note: "Score ≥ 75 → BLOCK. Score ≥ 50 → ALERT. Below 50 → ALLOW."
+  }
+};
+
+function showStep(n) {
+  document.querySelectorAll('.pipe-step').forEach(s => s.classList.remove('active-step'));
+  event.currentTarget.classList.add('active-step');
+
+  const d = stepDetails[n];
+  document.getElementById('step-detail').innerHTML = `
+    <div class="detail-title" style="color:${d.color}">📌 ${d.title}</div>
+    <div class="detail-sub">${d.desc}</div>
+    <div class="arrow-flow">
+      <div class="af-box" style="font-size:11px">${d.from}</div>
+      <span class="af-arrow" style="font-size:20px">──→</span>
+      <div class="af-box" style="border-color:${d.color};color:${d.color};font-family:'JetBrains Mono',monospace;font-size:11px">${d.to}</div>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin-top:8px">💡 ${d.note}</p>
+  `;
+}
+</script>
+</body>
+</html>
